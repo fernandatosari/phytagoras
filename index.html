@@ -1,0 +1,689 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Calculator, 
+  Gamepad2, 
+  BookOpen, 
+  Search, 
+  MessageCircle, 
+  Award, 
+  CheckCircle, 
+  XCircle, 
+  RefreshCw,
+  Play,
+  ChevronRight,
+  Brain
+} from 'lucide-react';
+
+// --- TIPE DATA ---
+type Tab = 'icebreaking' | 'materi' | 'investigasi' | 'game' | 'refleksi' | 'asesmen';
+
+interface Question {
+  id: number;
+  question: string;
+  options: string[];
+  correctAnswer: number; // index
+  explanation?: string;
+}
+
+// --- DATA SOAL ASESMEN (20 SOAL) ---
+const assessmentQuestions: Question[] = [
+  { id: 1, question: "Sebuah segitiga siku-siku memiliki panjang sisi tegak 3 cm dan 4 cm. Berapakah panjang sisi miringnya?", options: ["5 cm", "6 cm", "7 cm", "8 cm"], correctAnswer: 0 },
+  { id: 2, question: "Manakah dari kelompok bilangan berikut yang merupakan Tripel Pythagoras?", options: ["3, 4, 6", "5, 12, 13", "6, 8, 12", "7, 24, 26"], correctAnswer: 1 },
+  { id: 3, question: "Jika hipotenusa adalah c, dan sisi siku-siku adalah a dan b, rumus Pythagoras yang benar adalah...", options: ["a² - b² = c²", "c² - a² = b²", "a² + c² = b²", "a + b = c"], correctAnswer: 1 },
+  { id: 4, question: "Sebuah tangga sepanjang 10 m disandarkan pada tembok. Jarak kaki tangga ke tembok adalah 6 m. Berapakah tinggi tembok yang dicapai tangga?", options: ["7 m", "8 m", "9 m", "10 m"], correctAnswer: 1 },
+  { id: 5, question: "Panjang hipotenusa segitiga siku-siku sama kaki dengan panjang sisi siku-siku 5 cm adalah...", options: ["5√2 cm", "10 cm", "√50 cm", "25 cm"], correctAnswer: 0 },
+  { id: 6, question: "Sebuah kapal berlayar ke utara sejauh 12 km, kemudian ke timur sejauh 5 km. Jarak kapal dari titik awal adalah...", options: ["13 km", "15 km", "17 km", "10 km"], correctAnswer: 0 },
+  { id: 7, question: "Diketahui segitiga dengan sisi 8 cm, 15 cm, dan 17 cm. Jenis segitiga tersebut adalah...", options: ["Lancip", "Tumpul", "Siku-siku", "Sama sisi"], correctAnswer: 2 },
+  { id: 8, question: "Nilai x pada segitiga siku-siku dengan sisi 6, 8, dan x adalah...", options: ["9", "10", "12", "14"], correctAnswer: 1 },
+  { id: 9, question: "Diagonal ruang balok bukan penerapan Pythagoras. Pernyataan ini...", options: ["Benar", "Salah", "Ragu-ragu", "Tidak tahu"], correctAnswer: 1 },
+  { id: 10, question: "Panjang diagonal persegi panjang dengan panjang 12 cm dan lebar 9 cm adalah...", options: ["13 cm", "14 cm", "15 cm", "16 cm"], correctAnswer: 2 },
+  { id: 11, question: "Bilangan 7, 24, 25 merupakan Tripel Pythagoras. Benar atau Salah?", options: ["Benar", "Salah", "Mungkin", "Tidak ada hubungan"], correctAnswer: 0 },
+  { id: 12, question: "Sebuah tiang tingginya 12 m berdiri tegak di atas tanah datar. Dari ujung atas tiang ditarik tali ke sebuah patok yang berjarak 5 m dari pangkal tiang. Panjang tali adalah...", options: ["12 m", "13 m", "14 m", "15 m"], correctAnswer: 1 },
+  { id: 13, question: "Segitiga dengan sisi 10, 24, 26. Luas segitiga tersebut adalah...", options: ["120", "240", "60", "312"], correctAnswer: 0 },
+  { id: 14, question: "Jarak antara titik A(1,1) dan B(4,5) pada bidang Kartesius adalah...", options: ["3", "4", "5", "6"], correctAnswer: 2 },
+  { id: 15, question: "Hipotenusa adalah sisi yang...", options: ["Terpendek", "Berhadapan dengan sudut siku-siku", "Tegak lurus", "Berimpit"], correctAnswer: 1 },
+  { id: 16, question: "Jika a = 9 dan c = 15, maka b = ...", options: ["10", "11", "12", "13"], correctAnswer: 2 },
+  { id: 17, question: "Dua buah tiang berdampingan berjarak 12 m. Jika tinggi tiang masing-masing 22 m dan 13 m, hitunglah panjang kawat penghubung antara ujung tiang tersebut.", options: ["13 m", "14 m", "15 m", "16 m"], correctAnswer: 2 },
+  { id: 18, question: "Manakah yang BUKAN Tripel Pythagoras?", options: ["3, 4, 5", "6, 8, 10", "5, 12, 13", "8, 10, 15"], correctAnswer: 3 },
+  { id: 19, question: "Sebuah belah ketupat memiliki diagonal 10 cm dan 24 cm. Panjang sisinya adalah...", options: ["13 cm", "26 cm", "12 cm", "5 cm"], correctAnswer: 0 },
+  { id: 20, question: "Aplikasi Pythagoras banyak digunakan dalam bidang...", options: ["Sastra", "Arsitektur & Konstruksi", "Biologi", "Kimia"], correctAnswer: 1 },
+];
+
+// --- BANK SOAL UNTUK GAME (Campuran Mudah-Sedang) ---
+const gameQuestions = [
+  { q: "√144 = ?", a: "12" },
+  { q: "Sisi miring disebut juga?", a: "Hipotenusa" },
+  { q: "3² + 4² = ?", a: "25" },
+  { q: "Tripel Pythagoras terkecil?", a: "3, 4, 5" },
+  { q: "Rumus c² = ...", a: "a² + b²" },
+  { q: "√64 = ?", a: "8" },
+  { q: "Sudut siku-siku besarnya?", a: "90 derajat" },
+  { q: "6, 8, ...", a: "10" },
+  { q: "5, 12, ...", a: "13" },
+  { q: "√225 = ?", a: "15" },
+];
+
+// --- KOMPONEN UTAMA ---
+export default function PythagorasApp() {
+  const [activeTab, setActiveTab] = useState<Tab>('icebreaking');
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'icebreaking': return <IceBreaking />;
+      case 'materi': return <Materi />;
+      case 'investigasi': return <Investigasi />;
+      case 'game': return <TicTacToeGame />;
+      case 'refleksi': return <Refleksi />;
+      case 'asesmen': return <Asesmen />;
+      default: return <IceBreaking />;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 flex flex-col">
+      {/* Header */}
+      <header className="bg-indigo-600 text-white p-4 shadow-lg sticky top-0 z-50">
+        <div className="max-w-4xl mx-auto flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Calculator className="h-6 w-6" />
+              Pythagoras Master
+            </h1>
+            <p className="text-indigo-200 text-sm">Media Pembelajaran Matematika Kelas 8</p>
+          </div>
+          <div className="hidden md:block text-right">
+            <p className="font-semibold">Selamat Datang, Pak Guru/Bu Guru!</p>
+            <p className="text-xs text-indigo-200">Mode Interaktif</p>
+          </div>
+        </div>
+      </header>
+
+      {/* Navigation Tabs */}
+      <nav className="bg-white shadow-md overflow-x-auto">
+        <div className="max-w-4xl mx-auto flex">
+          <TabButton active={activeTab === 'icebreaking'} onClick={() => setActiveTab('icebreaking')} icon={<Gamepad2 size={18} />} label="Ice Breaking" />
+          <TabButton active={activeTab === 'materi'} onClick={() => setActiveTab('materi')} icon={<BookOpen size={18} />} label="Materi" />
+          <TabButton active={activeTab === 'investigasi'} onClick={() => setActiveTab('investigasi')} icon={<Search size={18} />} label="Investigasi" />
+          <TabButton active={activeTab === 'game'} onClick={() => setActiveTab('game')} icon={<Brain size={18} />} label="Uji Pemahaman" />
+          <TabButton active={activeTab === 'refleksi'} onClick={() => setActiveTab('refleksi')} icon={<MessageCircle size={18} />} label="Refleksi" />
+          <TabButton active={activeTab === 'asesmen'} onClick={() => setActiveTab('asesmen')} icon={<Award size={18} />} label="Asesmen" />
+        </div>
+      </nav>
+
+      {/* Main Content Area */}
+      <main className="flex-grow p-4 md:p-6 overflow-y-auto">
+        <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-sm border border-slate-200 min-h-[500px] p-6">
+          {renderContent()}
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-slate-800 text-slate-400 p-4 text-center text-sm">
+        <p>&copy; 2024 Media Pembelajaran Matematika SMP. Dibuat dengan ❤️ untuk Pendidikan.</p>
+      </footer>
+    </div>
+  );
+}
+
+// --- SUB COMPONENTS ---
+
+const TabButton = ({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string }) => (
+  <button
+    onClick={onClick}
+    className={`flex items-center gap-2 px-6 py-4 transition-colors whitespace-nowrap border-b-2 font-medium ${
+      active 
+        ? 'border-indigo-600 text-indigo-600 bg-indigo-50' 
+        : 'border-transparent text-slate-500 hover:text-indigo-500 hover:bg-slate-50'
+    }`}
+  >
+    {icon}
+    <span>{label}</span>
+  </button>
+);
+
+// 1. ICE BREAKING: TEBAK ANGKA
+const IceBreaking = () => {
+  const [target, setTarget] = useState(Math.floor(Math.random() * 100) + 1);
+  const [guess, setGuess] = useState('');
+  const [message, setMessage] = useState('Saya memikirkan angka 1 sampai 100. Coba tebak!');
+  const [attempts, setAttempts] = useState(0);
+  const [solved, setSolved] = useState(false);
+
+  const handleGuess = (e: React.FormEvent) => {
+    e.preventDefault();
+    const val = parseInt(guess);
+    if (isNaN(val)) return;
+
+    setAttempts(p => p + 1);
+    if (val === target) {
+      setMessage(`🎉 Benar! Angkanya adalah ${target}. Kamu menebak dalam ${attempts + 1} kali.`);
+      setSolved(true);
+    } else if (val < target) {
+      setMessage('📉 Terlalu Rendah! Coba lagi.');
+    } else {
+      setMessage('📈 Terlalu Tinggi! Coba lagi.');
+    }
+    setGuess('');
+  };
+
+  const reset = () => {
+    setTarget(Math.floor(Math.random() * 100) + 1);
+    setAttempts(0);
+    setMessage('Saya memikirkan angka 1 sampai 100. Coba tebak!');
+    setSolved(false);
+    setGuess('');
+  };
+
+  return (
+    <div className="text-center max-w-md mx-auto py-10">
+      <h2 className="text-3xl font-bold text-indigo-700 mb-4">🎮 Tebak Angka Misterius</h2>
+      <p className="mb-6 text-slate-600">Pemanasan otak sebelum kita masuk ke rumus matematika!</p>
+      
+      <div className="bg-indigo-50 p-6 rounded-2xl mb-6">
+        <p className="text-xl font-medium text-indigo-900 mb-4">{message}</p>
+        {!solved ? (
+          <form onSubmit={handleGuess} className="flex gap-2 justify-center">
+            <input 
+              type="number" 
+              value={guess}
+              onChange={(e) => setGuess(e.target.value)}
+              className="px-4 py-2 rounded-lg border-2 border-indigo-200 focus:border-indigo-500 outline-none w-32 text-center text-lg"
+              placeholder="0-100"
+            />
+            <button type="submit" className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition">
+              Tebak
+            </button>
+          </form>
+        ) : (
+          <button onClick={reset} className="flex items-center gap-2 mx-auto bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition">
+            <RefreshCw size={18} /> Main Lagi
+          </button>
+        )}
+      </div>
+      <p className="text-sm text-slate-400">Percobaan: {attempts}</p>
+    </div>
+  );
+};
+
+// 2. MATERI: VISUALISASI PYTHAGORAS
+const Materi = () => {
+  const [a, setA] = useState(3);
+  const [b, setB] = useState(4);
+  
+  const c = Math.sqrt(a*a + b*b);
+  const scale = 20; // scale for SVG drawing
+
+  return (
+    <div className="grid md:grid-cols-2 gap-8">
+      <div>
+        <h2 className="text-2xl font-bold text-slate-800 mb-4">Teorema Pythagoras</h2>
+        <div className="prose text-slate-600 text-sm md:text-base">
+          <p className="mb-4">
+            Pada segitiga siku-siku, kuadrat panjang sisi miring (hipotenusa) sama dengan jumlah kuadrat panjang sisi-sisi lainnya.
+          </p>
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+            <p className="font-bold text-lg text-slate-800 font-mono text-center">c² = a² + b²</p>
+          </div>
+          <ul className="list-disc pl-5 space-y-2">
+            <li><strong>a</strong> = Sisi tegak / alas</li>
+            <li><strong>b</strong> = Sisi alas / tegak</li>
+            <li><strong>c</strong> = Sisi miring (Hipotenusa), sisi terpanjang di depan sudut siku-siku.</li>
+          </ul>
+        </div>
+        
+        <div className="mt-8 bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <h3 className="font-bold mb-4 flex items-center gap-2"><Calculator size={16}/> Eksplorasi</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase">Panjang a (Alas): {a}</label>
+              <input type="range" min="3" max="12" value={a} onChange={(e) => setA(Number(e.target.value))} className="w-full accent-indigo-600" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase">Panjang b (Tinggi): {b}</label>
+              <input type="range" min="3" max="12" value={b} onChange={(e) => setB(Number(e.target.value))} className="w-full accent-pink-600" />
+            </div>
+            <div className="pt-2 border-t">
+              <p className="font-mono text-lg">
+                c = √({a}² + {b}²) = <span className="text-indigo-600 font-bold">{c.toFixed(2)}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col items-center justify-center bg-slate-100 rounded-xl p-4 relative overflow-hidden">
+        <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded text-xs text-slate-400">Visualisasi Skala Otomatis</div>
+        <svg width="300" height="300" viewBox="0 0 350 350" className="overflow-visible">
+           {/* Grid Background */}
+           <defs>
+            <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e2e8f0" strokeWidth="1"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#grid)" />
+
+          {/* Triangle */}
+          <path 
+            d={`M 50 ${50 + b*scale} L ${50 + a*scale} ${50 + b*scale} L 50 50 Z`} 
+            fill="rgba(79, 70, 229, 0.2)" 
+            stroke="#4f46e5" 
+            strokeWidth="3"
+          />
+          
+          {/* Labels */}
+          {/* Side A */}
+          <text x={50 + (a*scale)/2} y={50 + b*scale + 20} textAnchor="middle" className="text-sm font-bold fill-indigo-700">a={a}</text>
+          {/* Side B */}
+          <text x={30} y={50 + (b*scale)/2} textAnchor="middle" className="text-sm font-bold fill-pink-700">b={b}</text>
+          {/* Side C */}
+          <text x={50 + (a*scale)/2 + 10} y={50 + (b*scale)/2 - 10} textAnchor="middle" className="text-sm font-bold fill-slate-700">c={c.toFixed(1)}</text>
+          
+          {/* Right Angle Symbol */}
+          <path d={`M 50 ${50 + b*scale - 15} L 65 ${50 + b*scale - 15} L 65 ${50 + b*scale}`} fill="none" stroke="#4f46e5" />
+        </svg>
+      </div>
+    </div>
+  );
+};
+
+// 3. INVESTIGASI: LKPD INTERAKTIF
+const Investigasi = () => {
+  const [sisi1, setSisi1] = useState<string>('');
+  const [sisi2, setSisi2] = useState<string>('');
+  const [showResult, setShowResult] = useState(false);
+
+  const s1 = parseFloat(sisi1) || 0;
+  const s2 = parseFloat(sisi2) || 0;
+  const hyp = Math.sqrt(s1*s1 + s2*s2);
+
+  return (
+    <div className="max-w-2xl mx-auto">
+      <h2 className="text-2xl font-bold text-slate-800 mb-2">🕵️ Investigasi: Menemukan Sisi Miring</h2>
+      <p className="text-slate-600 mb-6">Lengkapi Lembar Kerja Peserta Didik (LKPD) digital berikut untuk membuktikan hipotesismu.</p>
+
+      <div className="bg-white border rounded-xl shadow-sm p-6 space-y-6">
+        <div className="space-y-4">
+          <h3 className="font-bold text-indigo-700 border-b pb-2">Langkah 1: Tentukan Sisi Siku-Siku</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Panjang Sisi A</label>
+              <input 
+                type="number" 
+                value={sisi1} 
+                onChange={(e) => {setSisi1(e.target.value); setShowResult(false);}} 
+                className="w-full p-2 border rounded focus:ring-2 focus:ring-indigo-500" 
+                placeholder="Contoh: 6"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Panjang Sisi B</label>
+              <input 
+                type="number" 
+                value={sisi2} 
+                onChange={(e) => {setSisi2(e.target.value); setShowResult(false);}} 
+                className="w-full p-2 border rounded focus:ring-2 focus:ring-indigo-500" 
+                placeholder="Contoh: 8"
+              />
+            </div>
+          </div>
+        </div>
+
+        {s1 > 0 && s2 > 0 && (
+          <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+            <h3 className="font-bold text-indigo-700 border-b pb-2">Langkah 2: Hitung Luas Persegi</h3>
+            <div className="grid grid-cols-2 gap-4 text-center">
+              <div className="bg-blue-50 p-3 rounded">
+                <p className="text-xs text-blue-600 uppercase font-bold">Luas Persegi pada sisi A</p>
+                <p className="text-xl font-mono">{s1}² = <span className="font-bold text-blue-700">{s1*s1}</span></p>
+              </div>
+              <div className="bg-pink-50 p-3 rounded">
+                <p className="text-xs text-pink-600 uppercase font-bold">Luas Persegi pada sisi B</p>
+                <p className="text-xl font-mono">{s2}² = <span className="font-bold text-pink-700">{s2*s2}</span></p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {s1 > 0 && s2 > 0 && (
+          <div className="space-y-4">
+             <h3 className="font-bold text-indigo-700 border-b pb-2">Langkah 3: Jumlahkan & Akar</h3>
+             <div className="bg-indigo-900 text-white p-4 rounded-lg text-center">
+                <p className="mb-2">Total Luas = Luas A + Luas B</p>
+                <p className="text-2xl font-mono font-bold mb-4">{s1*s1} + {s2*s2} = {s1*s1 + s2*s2}</p>
+                
+                <button 
+                  onClick={() => setShowResult(true)}
+                  className="bg-white text-indigo-900 px-6 py-2 rounded-full font-bold hover:bg-indigo-100 transition"
+                >
+                  Lihat Panjang Hipotenusa
+                </button>
+             </div>
+          </div>
+        )}
+
+        {showResult && (
+          <div className="bg-green-100 border border-green-300 p-4 rounded-lg text-center animate-bounce-short">
+            <p className="text-green-800 font-medium">Panjang Sisi Miring (c) adalah akar dari {s1*s1 + s2*s2}</p>
+            <p className="text-3xl font-bold text-green-700 mt-2">c = {Number.isInteger(hyp) ? hyp : hyp.toFixed(2)}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// 4. GAME: TIC-TAC-TOE 5x5
+const TicTacToeGame = () => {
+  const [board, setBoard] = useState(Array(25).fill(null));
+  const [isXNext, setIsXNext] = useState(true);
+  const [winner, setWinner] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [pendingIndex, setPendingIndex] = useState<number | null>(null);
+  const [currentQuestion, setCurrentQuestion] = useState<{q: string, a: string} | null>(null);
+  const [answer, setAnswer] = useState('');
+  const [feedback, setFeedback] = useState('');
+
+  const checkWinner = (squares: any[]) => {
+    const size = 5;
+    const winCount = 4; // 4 in a row to win to keep it fast
+
+    // Horizontal, Vertical, Diagonal checks
+    // Simplification for 5x5 logic usually requires iteration
+    // Checking Horizontal
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c <= size - winCount; c++) {
+        let idx = r * size + c;
+        if (squares[idx] && squares[idx] === squares[idx+1] && squares[idx] === squares[idx+2] && squares[idx] === squares[idx+3]) {
+          return squares[idx];
+        }
+      }
+    }
+    // Checking Vertical
+    for (let c = 0; c < size; c++) {
+      for (let r = 0; r <= size - winCount; r++) {
+        let idx = r * size + c;
+        if (squares[idx] && squares[idx] === squares[idx+size] && squares[idx] === squares[idx+size*2] && squares[idx] === squares[idx+size*3]) {
+          return squares[idx];
+        }
+      }
+    }
+    // Checking Diagonal \
+    for (let r = 0; r <= size - winCount; r++) {
+      for (let c = 0; c <= size - winCount; c++) {
+        let idx = r * size + c;
+        if (squares[idx] && squares[idx] === squares[idx+size+1] && squares[idx] === squares[idx+(size+1)*2] && squares[idx] === squares[idx+(size+1)*3]) {
+           return squares[idx];
+        }
+      }
+    }
+    // Checking Diagonal /
+    for (let r = 0; r <= size - winCount; r++) {
+      for (let c = winCount - 1; c < size; c++) {
+        let idx = r * size + c;
+         if (squares[idx] && squares[idx] === squares[idx+size-1] && squares[idx] === squares[idx+(size-1)*2] && squares[idx] === squares[idx+(size-1)*3]) {
+           return squares[idx];
+        }
+      }
+    }
+    return null;
+  };
+
+  const handleCellClick = (index: number) => {
+    if (board[index] || winner || modalOpen) return;
+    
+    // Pick random question
+    const q = gameQuestions[Math.floor(Math.random() * gameQuestions.length)];
+    setCurrentQuestion(q);
+    setPendingIndex(index);
+    setAnswer('');
+    setFeedback('');
+    setModalOpen(true);
+  };
+
+  const submitAnswer = () => {
+    if (!currentQuestion) return;
+    
+    // Simple verification (ignoring case)
+    if (answer.toLowerCase().trim() === currentQuestion.a.toLowerCase()) {
+      const newBoard = [...board];
+      if (pendingIndex !== null) {
+        newBoard[pendingIndex] = isXNext ? 'X' : 'O';
+        setBoard(newBoard);
+        const win = checkWinner(newBoard);
+        if (win) setWinner(win);
+        else setIsXNext(!isXNext);
+      }
+      setModalOpen(false);
+    } else {
+      setFeedback(`Salah! Jawaban: ${currentQuestion.a}. Giliran dilewati.`);
+      setTimeout(() => {
+        setModalOpen(false);
+        setIsXNext(!isXNext); // Penalty: lose turn
+      }, 2000);
+    }
+  };
+
+  const resetGame = () => {
+    setBoard(Array(25).fill(null));
+    setWinner(null);
+    setIsXNext(true);
+  };
+
+  return (
+    <div className="flex flex-col items-center">
+      <h2 className="text-2xl font-bold mb-2">⭕ Tic-Tac-Toe Pythagoras (5x5) ❌</h2>
+      <p className="text-slate-500 mb-4">Dapatkan 4 simbol berurutan untuk menang! Jawab soal untuk melangkah.</p>
+      
+      {winner && (
+        <div className="bg-yellow-100 text-yellow-800 px-6 py-2 rounded-full font-bold mb-4 animate-bounce">
+          Pemenang: Pemain {winner}! 🎉
+        </div>
+      )}
+
+      <div className="flex gap-4 mb-4">
+        <span className={`px-4 py-1 rounded ${isXNext ? 'bg-indigo-600 text-white' : 'bg-slate-200'}`}>Pemain X</span>
+        <span className={`px-4 py-1 rounded ${!isXNext ? 'bg-pink-600 text-white' : 'bg-slate-200'}`}>Pemain O</span>
+      </div>
+
+      <div className="grid grid-cols-5 gap-1 bg-slate-300 p-1 rounded-lg">
+        {board.map((cell, i) => (
+          <button
+            key={i}
+            onClick={() => handleCellClick(i)}
+            className={`w-12 h-12 md:w-16 md:h-16 bg-white flex items-center justify-center text-xl md:text-2xl font-bold rounded hover:bg-slate-50 transition ${
+              cell === 'X' ? 'text-indigo-600' : cell === 'O' ? 'text-pink-600' : ''
+            }`}
+          >
+            {cell}
+          </button>
+        ))}
+      </div>
+
+      <button onClick={resetGame} className="mt-6 flex items-center gap-2 text-slate-500 hover:text-indigo-600">
+        <RefreshCw size={16} /> Reset Permainan
+      </button>
+
+      {/* Modal Quiz */}
+      {modalOpen && currentQuestion && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-6 rounded-xl max-w-sm w-full shadow-2xl">
+            <h3 className="font-bold text-lg mb-2">Jawab Cepat!</h3>
+            <p className="mb-4 text-lg font-medium">{currentQuestion.q}</p>
+            <input 
+              autoFocus
+              className="w-full border p-2 rounded mb-2"
+              placeholder="Jawaban..."
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+            />
+            {feedback && <p className="text-red-500 text-sm mb-2">{feedback}</p>}
+            <button onClick={submitAnswer} className="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700">Jawab</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// 5. REFLEKSI
+const Refleksi = () => {
+  const [submitted, setSubmitted] = useState(false);
+  const [rating, setRating] = useState(0);
+
+  return (
+    <div className="max-w-2xl mx-auto">
+      <h2 className="text-2xl font-bold mb-6 text-indigo-900">📝 Refleksi Pembelajaran</h2>
+      {!submitted ? (
+        <div className="space-y-6">
+          <div>
+            <label className="block font-medium mb-2">Bagaimana perasaanmu setelah belajar hari ini?</label>
+            <div className="flex gap-4 text-2xl">
+              {[1, 2, 3, 4, 5].map((num) => (
+                <button 
+                  key={num}
+                  onClick={() => setRating(num)}
+                  className={`p-3 rounded-full transition ${rating === num ? 'bg-yellow-200 scale-110' : 'bg-slate-100 hover:bg-slate-200'}`}
+                >
+                  {num === 1 ? '😫' : num === 2 ? '😕' : num === 3 ? '😐' : num === 4 ? '🙂' : '🤩'}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block font-medium mb-2">Apa satu hal baru yang kamu pelajari?</label>
+            <textarea className="w-full border rounded-lg p-3 h-24 focus:ring-2 focus:ring-indigo-500" placeholder="Tulis di sini..."></textarea>
+          </div>
+          <div>
+            <label className="block font-medium mb-2">Bagian mana yang masih membingungkan?</label>
+            <textarea className="w-full border rounded-lg p-3 h-24 focus:ring-2 focus:ring-indigo-500" placeholder="Tulis di sini..."></textarea>
+          </div>
+          <button 
+            onClick={() => setSubmitted(true)}
+            className="bg-indigo-600 text-white px-8 py-3 rounded-lg hover:bg-indigo-700 font-medium w-full md:w-auto"
+          >
+            Kirim Refleksi
+          </button>
+        </div>
+      ) : (
+        <div className="text-center py-10 bg-green-50 rounded-xl">
+          <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
+          <h3 className="text-2xl font-bold text-green-800">Terima Kasih!</h3>
+          <p className="text-green-700">Refleksimu sangat berharga untuk pembelajaran selanjutnya.</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// 6. ASESMEN: 20 SOAL
+const Asesmen = () => {
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [score, setScore] = useState(0);
+  const [showResult, setShowResult] = useState(false);
+  const [answers, setAnswers] = useState<number[]>(Array(20).fill(-1));
+
+  const handleAnswer = (optionIdx: number) => {
+    const newAnswers = [...answers];
+    newAnswers[currentIdx] = optionIdx;
+    setAnswers(newAnswers);
+  };
+
+  const nextQuestion = () => {
+    if (currentIdx < assessmentQuestions.length - 1) {
+      setCurrentIdx(currentIdx + 1);
+    } else {
+      calculateScore();
+    }
+  };
+
+  const calculateScore = () => {
+    let correctCount = 0;
+    assessmentQuestions.forEach((q, idx) => {
+      if (answers[idx] === q.correctAnswer) correctCount++;
+    });
+    setScore(correctCount * 5); // 20 soal x 5 = 100
+    setShowResult(true);
+  };
+
+  const restart = () => {
+    setCurrentIdx(0);
+    setScore(0);
+    setShowResult(false);
+    setAnswers(Array(20).fill(-1));
+  };
+
+  if (showResult) {
+    return (
+      <div className="text-center py-10">
+        <h2 className="text-3xl font-bold mb-2">Hasil Asesmen</h2>
+        <div className="inline-block p-8 bg-white rounded-full shadow-xl border-4 border-indigo-100 mb-6">
+          <span className="text-6xl font-bold text-indigo-600">{score}</span>
+          <span className="text-slate-400 text-xl">/100</span>
+        </div>
+        <p className="mb-8 text-lg">
+          {score >= 80 ? "Luar Biasa! Kamu sudah menguasai materi." : score >= 60 ? "Cukup Baik, tingkatkan lagi latihannya." : "Jangan menyerah, ayo belajar lagi!"}
+        </p>
+        <div className="max-w-xl mx-auto text-left space-y-2 mb-8 h-60 overflow-y-auto border p-4 rounded bg-slate-50">
+           {assessmentQuestions.map((q, i) => (
+             <div key={i} className={`text-sm p-2 rounded ${answers[i] === q.correctAnswer ? 'bg-green-100' : 'bg-red-100'}`}>
+                {i+1}. {answers[i] === q.correctAnswer ? '✅ Benar' : `❌ Salah (Jawaban: ${q.options[q.correctAnswer]})`}
+             </div>
+           ))}
+        </div>
+        <button onClick={restart} className="bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700">Ulangi Tes</button>
+      </div>
+    );
+  }
+
+  const q = assessmentQuestions[currentIdx];
+
+  return (
+    <div className="max-w-3xl mx-auto">
+      <div className="flex justify-between items-center mb-6 border-b pb-4">
+        <h2 className="text-xl font-bold text-slate-700">Asesmen Kompetensi</h2>
+        <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">Soal {currentIdx + 1} dari 20</span>
+      </div>
+
+      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-6 min-h-[200px]">
+        <p className="text-lg font-medium text-slate-800 mb-6">{q.question}</p>
+        <div className="grid md:grid-cols-2 gap-4">
+          {q.options.map((opt, i) => (
+            <button
+              key={i}
+              onClick={() => handleAnswer(i)}
+              className={`p-4 text-left rounded-lg border-2 transition ${
+                answers[currentIdx] === i 
+                  ? 'border-indigo-600 bg-indigo-50 text-indigo-900' 
+                  : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center border ${answers[currentIdx] === i ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-400 text-slate-400'}`}>
+                  {String.fromCharCode(65 + i)}
+                </div>
+                <span>{opt}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex justify-between">
+        <button 
+          onClick={() => setCurrentIdx(Math.max(0, currentIdx - 1))}
+          disabled={currentIdx === 0}
+          className="px-6 py-2 rounded text-slate-500 disabled:opacity-30 hover:bg-slate-100"
+        >
+          Kembali
+        </button>
+        <button 
+          onClick={nextQuestion}
+          disabled={answers[currentIdx] === -1}
+          className="bg-indigo-600 text-white px-8 py-2 rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        >
+          {currentIdx === assessmentQuestions.length - 1 ? 'Selesai' : 'Lanjut'} <ChevronRight size={16} />
+        </button>
+      </div>
+    </div>
+  );
+};
